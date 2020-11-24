@@ -14,34 +14,44 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
     {
         private readonly Random _random = new Random();
 
+        private WalkingAlgorithm walkingAlgorithm = new WalkingAlgorithm();
+
         public Task<Party> CreateParty(CreatePartyRequest request)
         {
             var party = new Party
             {
-                Name = "My Party",
+                Name = "NullReferenceException",
                 Members = new List<PartyMember>()
             };
 
-            for (var i = 0; i < request.MembersCount; i++)
-            {
+            
                 party.Members.Add(new Fighter()
                 {
-                    Id = i,
-                    Name = $"Member {i + 1}",
+                    Id = 1,
+                    Name = "Brambo",
                     Constitution = 11,
                     Strength = 12,
                     Intelligence = 11
                 });
-            }
+                party.Members.Add(new Fighter()
+                {
+                    Id = 2,
+                    Name = "Chrissy",
+                    Constitution = 11,
+                    Strength = 12,
+                    Intelligence = 11
+                });
+            
 
             return Task.FromResult(party);
         }
 
         public Task<Turn> PlayTurn(PlayTurnRequest request)
         {
-            return PlayToEnd();
+            
+            return walkingAlgorithm.DecideTurn(request);
 
-            Task<Turn> PlayToEnd()
+            /*Task<Turn> PlayToEnd()
             {
                 return Task.FromResult(request.PossibleActions.Contains(TurnAction.WalkSouth) ? new Turn(TurnAction.WalkSouth) : new Turn(request.PossibleActions[_random.Next(request.PossibleActions.Length)]));
             }
@@ -71,7 +81,7 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
                 }
 
                 return Task.FromResult(new Turn(request.PossibleActions[_random.Next(request.PossibleActions.Length)]));
-            }
+            }*/
         }
     }
 }
