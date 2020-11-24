@@ -8,27 +8,34 @@ using System.Threading.Tasks;
 
 namespace TheFellowshipOfCode.DotNet.YourAdventure
 {
-    public class WalkingAlgorithm
+    public class DungeonAlgorithm
     {
         private readonly Random _random = new Random();
-        //private TurnAction lastAction;
         private List<TurnAction> actionList = new List<TurnAction>();
+
         private double goingEastBias = 1.00;
         private double goingSouthBias = 1.00;
         private double goingNorthBias = 1.00;
         private double goingWestBias = 1.00;
 
-        const double BIASDECREASE = 0.04;
+        const double BIASDECREASE = 0.08;
+        const double BIASINCREASE = 0.02;
 
-        public WalkingAlgorithm()
+        private bool BiasSet = false;
+
+        private int potionAmount = 0;
+
+        public DungeonAlgorithm()
         {
-            actionList.Add(TurnAction.Pass);
-            actionList.Add(TurnAction.Pass);
             actionList.Add(TurnAction.Pass);
         }
 
         public Task<Turn> DecideTurn(PlayTurnRequest request)
         {
+            if (!BiasSet)
+            {
+                SetBias(request);
+            }
 
             if (CanLoot(request))
             {
@@ -66,16 +73,34 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             }
 
             return Move(request);
-            //return Task.FromResult(new Turn(request.PossibleActions[_random.Next(request.PossibleActions.Length)]));
         }
 
         public Task<Turn> Battle(PlayTurnRequest request)
         {
-            if (request.IsCombat && request.PartyMember.CurrentHealthPoints <= 5)
+            if (request.IsCombat && request.PartyMember.CurrentHealthPoints <= 20 && 0 < request.PartyMember.CurrentHealthPoints)
             {
-                return DrinkPotion();
+                //return DrinkPotion();
+                return Attack();
             }
+
             return Attack();
+        }
+
+        public void SetBias(PlayTurnRequest request)
+        {
+            int startX = request.PartyLocation.X;
+            int startY = request.PartyLocation.Y;
+            BiasSet = true;
+
+            if (startX < 5)
+                goingEastBias = 1.25;
+            else
+                goingWestBias = 1.25;
+            
+            if (startY < 5)
+                goingSouthBias = 1.25;
+            else
+                goingNorthBias = 1.25;
         }
 
         //Actions
@@ -86,7 +111,13 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 actionList.Add(TurnAction.WalkSouth);
             }
-            goingSouthBias -= BIASDECREASE;
+
+            if (goingSouthBias > 0.4)
+            {
+                goingSouthBias -= BIASDECREASE;
+            }
+
+            goingNorthBias += BIASINCREASE;
             return Task.FromResult(new Turn(TurnAction.WalkSouth));
         }
 
@@ -96,7 +127,13 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 actionList.Add(TurnAction.WalkEast);
             }
-            goingEastBias -= BIASDECREASE;
+
+            if (goingEastBias > 0.4)
+            {
+                goingEastBias -= BIASDECREASE;
+            }
+
+            goingWestBias += BIASINCREASE;
             return Task.FromResult(new Turn(TurnAction.WalkEast));
         }
 
@@ -106,7 +143,13 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 actionList.Add(TurnAction.WalkNorth);
             }
-            goingNorthBias -= BIASDECREASE;
+
+            if (goingNorthBias > 0.4)
+            {
+                goingNorthBias -= BIASDECREASE;
+            }
+
+            goingSouthBias += BIASINCREASE;
             return Task.FromResult(new Turn(TurnAction.WalkNorth));
         }
 
@@ -116,7 +159,13 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 actionList.Add(TurnAction.WalkWest);
             }
-            goingWestBias -= BIASDECREASE;
+
+            if (goingWestBias > 0.4)
+            {
+                goingWestBias -= BIASDECREASE;
+            }
+
+            goingEastBias += BIASINCREASE;
             return Task.FromResult(new Turn(TurnAction.WalkWest));
         }
 
@@ -127,11 +176,18 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
 
         public Task<Turn> Loot()
         {
+            if (!(actionList[actionList.Count - 1] == TurnAction.Attack))
+            {
+                potionAmount++;
+            }
+
             return Task.FromResult(new Turn(TurnAction.Loot));
         }
 
         public Task<Turn> DrinkPotion()
         {
+            actionList.Add(TurnAction.DrinkPotion);
+            potionAmount--;
             return Task.FromResult(new Turn(TurnAction.DrinkPotion));
         }
 
@@ -143,14 +199,7 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 return false;
             }
-            /*if (request.PossibleActions.Contains(TurnAction.WalkEast) && actionList[actionList.Count - 3] == TurnAction.WalkEast && actionList[actionList.Count - 2] == TurnAction.WalkNorth && actionList[actionList.Count - 1] == TurnAction.WalkWest)
-            {
-                return false;
-            }
-            if (request.PossibleActions.Contains(TurnAction.WalkWest) && actionList[actionList.Count - 3] == TurnAction.WalkWest && actionList[actionList.Count - 2] == TurnAction.WalkNorth && actionList[actionList.Count - 1] == TurnAction.WalkEast)
-            {
-                return false;
-            }*/
+
             return request.PossibleActions.Contains(TurnAction.WalkSouth);
         }
 
@@ -160,6 +209,7 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 return false;
             }
+
             return request.PossibleActions.Contains(TurnAction.WalkWest);
         }
 
@@ -169,6 +219,7 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 return false;
             }
+
             return request.PossibleActions.Contains(TurnAction.WalkEast);
         }
 
@@ -178,6 +229,7 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 return false;
             }
+
             return request.PossibleActions.Contains(TurnAction.WalkNorth);
         }
 
@@ -193,6 +245,11 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
 
         public bool CanDrinkPotion(PlayTurnRequest request)
         {
+            if (actionList[actionList.Count - 1] == TurnAction.DrinkPotion || potionAmount <= 0)
+            {
+                return false;
+            }
+
             return request.PossibleActions.Contains(TurnAction.DrinkPotion);
         }
 
@@ -202,6 +259,7 @@ namespace TheFellowshipOfCode.DotNet.YourAdventure
             {
                 return true;
             }
+
             return false;
         }
     }
